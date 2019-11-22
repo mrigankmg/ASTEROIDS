@@ -24,10 +24,14 @@ textRect = text.get_rect()
 textRect.center = (TEXT_POS[0], TEXT_POS[1])
 game_over = False
 
-def rotate(angle):
+def rotate(clockwise=True):
     global PLAYER_POS
-    s = math.sin(angle)
-    c = math.cos(angle)
+    if not clockwise:
+        s = math.sin(-PLAYER_ROTATIONAL_VELOCITY)
+        c = math.cos(-PLAYER_ROTATIONAL_VELOCITY)
+    else:
+        s = math.sin(PLAYER_ROTATIONAL_VELOCITY)
+        c = math.cos(PLAYER_ROTATIONAL_VELOCITY)
     PLAYER_POS = [(PLAYER_POS[0][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[0][1] - PLAYER_PIVOT_POS[1]), (PLAYER_POS[1][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[1][1] - PLAYER_PIVOT_POS[1]), (PLAYER_POS[2][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[2][1] - PLAYER_PIVOT_POS[1])]
     rotated_player_pos = []
     for i in PLAYER_POS:
@@ -57,9 +61,9 @@ while not game_over:
             PLAYER_POS = [(PLAYER_POS[0][0] - PLAYER_VELOCITY, PLAYER_POS[0][1]), (PLAYER_POS[1][0] - PLAYER_VELOCITY, PLAYER_POS[1][1]), (PLAYER_POS[2][0] - PLAYER_VELOCITY, PLAYER_POS[2][1])]
             PLAYER_PIVOT_POS = (PLAYER_PIVOT_POS[0] - PLAYER_VELOCITY, PLAYER_PIVOT_POS[1])
         if keys_pressed[pyg.K_d]:
-            rotate(PLAYER_ROTATIONAL_VELOCITY)
+            rotate()
         if keys_pressed[pyg.K_a]:
-            rotate(-PLAYER_ROTATIONAL_VELOCITY)
+            rotate(clockwise=False)
         if keys_pressed[pyg.K_SPACE]:
             pass
     screen.fill(BACKGROUND_COLOR)
