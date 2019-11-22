@@ -9,16 +9,16 @@ HEIGHT = 720
 BACKGROUND_COLOR   = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255)
 PLAYER_COLOR = (245, 66, 66)
-TEXT_POS = (63, 25)
-PLAYER_POS = [(WIDTH//2 - 10, HEIGHT//2 + 14), (WIDTH//2, HEIGHT//2 - 14), (WIDTH//2 + 10, HEIGHT//2 + 14)]
-PLAYER_PIVOT_POS = (WIDTH//2, HEIGHT//2+5)
+TEXT_POS = (68, 25)
+PLAYER_POS = [(WIDTH//2 - 18, HEIGHT//2 + 24), (WIDTH//2, HEIGHT//2 - 24), (WIDTH//2 + 18, HEIGHT//2 + 24)]
+PLAYER_PIVOT_POS = (WIDTH//2, HEIGHT//2+8)
 PLAYER_ANGLE = 0
 PLAYER_VELOCITY = 4
 PLAYER_ROTATIONAL_VELOCITY = 0.1
 
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font('freesansbold.ttf', 24)
+font = pyg.font.Font('freesansbold.ttf', 28)
 text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
 textRect = text.get_rect()
 textRect.center = (TEXT_POS[0], TEXT_POS[1])
