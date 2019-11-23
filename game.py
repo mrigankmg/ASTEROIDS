@@ -22,7 +22,7 @@ TEXT_COLOR = (255, 255, 255) #White
 PLAYER_COLOR = (245, 66, 66) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
-TEXT_POS = (88, 32)
+TEXT_POS = (25, 15)
 player = Player(WIDTH/2, HEIGHT/2, 40, math.radians(90))
 TURN_SPEED = math.radians(10)
 PLAYER_THRUST = 0.1 #acceleration of ship in px/s
@@ -32,8 +32,6 @@ screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
 font = pyg.font.Font('trench100free.ttf', 40)
 text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
-textRect = text.get_rect()
-textRect.center = (TEXT_POS[0], TEXT_POS[1])
 game_over = False
 
 while not game_over:
@@ -94,5 +92,5 @@ while not game_over:
         player.pos[1] = HEIGHT + player.radius
     elif player.pos[1] > HEIGHT + player.radius:
         player.pos[1] = -player.radius
-    screen.blit(text, textRect)
+    screen.blit(text, TEXT_POS)
     pyg.display.flip()
