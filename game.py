@@ -39,11 +39,11 @@ while not game_over:
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
-    keys_pressed = pyg.key.get_pressed()
-    # draw player
+    #player coordinate and angle update
     player_tip = (player.x + 4/3 * player.radius * math.cos(player.angle), player.y - 4/3 * player.radius * math.sin(player.angle))
     player_rear_left = (player.x - player.radius * (2/3 * math.cos(player.angle) + math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) - math.cos(player.angle)))
     player_rear_right = (player.x - player.radius * (2/3 * math.cos(player.angle) - math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) + math.cos(player.angle)))
+    keys_pressed = pyg.key.get_pressed()
     if keys_pressed[pyg.K_ESCAPE]:
         sys.exit()
     else:
@@ -66,6 +66,7 @@ while not game_over:
     else:
         player.thrust[0] -= FRICTION * player.thrust[0]
         player.thrust[1] -= FRICTION * player.thrust[1]
+    #####draw player#####
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
@@ -73,5 +74,13 @@ while not game_over:
     player.angle += player.rotation
     player.x += player.thrust[0]
     player.y += player.thrust[1]
+    if player.x < -player.radius:
+        player.x = WIDTH + player.radius
+    elif player.x > WIDTH + player.radius:
+        player.x = -player.radius
+    if player.y < -player.radius:
+        player.y = HEIGHT + player.radius
+    elif player.y > HEIGHT + player.radius:
+        player.y = -player.radius
     screen.blit(text, textRect)
     pyg.display.flip()
