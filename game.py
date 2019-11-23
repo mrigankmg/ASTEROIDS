@@ -22,7 +22,7 @@ TEXT_COLOR = (255, 255, 255) #White
 PLAYER_COLOR = (245, 66, 66) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
-TEXT_POS = (68, 25)
+TEXT_POS = (88, 32)
 player = Player(WIDTH/2, HEIGHT/2, 40, math.radians(90))
 TURN_SPEED = math.radians(10)
 PLAYER_THRUST = 0.1 #acceleration of ship in px/s
@@ -30,7 +30,7 @@ FRICTION = 0.01
 
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font('freesansbold.ttf', 28)
+font = pyg.font.Font('trench100free.ttf', 40)
 text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
 textRect = text.get_rect()
 textRect.center = (TEXT_POS[0], TEXT_POS[1])
@@ -80,7 +80,7 @@ while not game_over:
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//15)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//15)
     ##### centroid check test #####
-    pyg.draw.rect(screen, TEXT_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
+    # pyg.draw.rect(screen, TEXT_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
     ###############################
     player.angle += player.rotation
     player.pos[0] += player.thrust[0]
