@@ -18,9 +18,11 @@ class Player:
 
 WIDTH = 1280
 HEIGHT = 720
-BACKGROUND_COLOR = (0, 0, 0)
-TEXT_COLOR = (255, 255, 255)
-PLAYER_COLOR = (245, 66, 66)
+BACKGROUND_COLOR = (0, 0, 0) #Black
+TEXT_COLOR = (255, 255, 255) #White
+PLAYER_COLOR = (245, 66, 66) #Red
+FIRE_FILL_COLOR = (255, 202, 54) #Yellow
+FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
 TEXT_POS = (68, 25)
 player = Player(WIDTH/2, HEIGHT/2, 30, math.radians(90))
 TURN_SPEED = math.radians(10)
@@ -39,7 +41,7 @@ while not game_over:
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
-    #player coordinate and angle update
+    ##### player coordinate and angle update #####
     player_tip = (player.x + 4/3 * player.radius * math.cos(player.angle), player.y - 4/3 * player.radius * math.sin(player.angle))
     player_rear_left = (player.x - player.radius * (2/3 * math.cos(player.angle) + math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) - math.cos(player.angle)))
     player_rear_right = (player.x - player.radius * (2/3 * math.cos(player.angle) - math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) + math.cos(player.angle)))
@@ -63,10 +65,18 @@ while not game_over:
     if player.is_thrusting:
         player.thrust[0] += PLAYER_THRUST * math.cos(player.angle)
         player.thrust[1] -= PLAYER_THRUST * math.sin(player.angle)
+        fire_tip = (player.x - 6/3 * player.radius * math.cos(player.angle), player.y + 6/3 * player.radius * math.sin(player.angle))
+        fire_rear_left = (player.x - player.radius * (2/3 * math.cos(player.angle) + 0.5 * math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) - 0.5 * math.cos(player.angle)))
+        fire_rear_right = (player.x - player.radius * (2/3 * math.cos(player.angle) - 0.5 * math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) + 0.5 * math.cos(player.angle)))
+        ##### draw fire #####
+        pyg.draw.polygon(screen, FIRE_FILL_COLOR, [fire_tip, fire_rear_left, fire_rear_right])
+        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_left, width=player.size//10)
+        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_rear_left, fire_rear_right, width=player.size//10)
+        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_right, width=player.size//10)
     else:
         player.thrust[0] -= FRICTION * player.thrust[0]
         player.thrust[1] -= FRICTION * player.thrust[1]
-    #####draw player#####
+    ##### draw player #####
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
@@ -74,6 +84,7 @@ while not game_over:
     player.angle += player.rotation
     player.x += player.thrust[0]
     player.y += player.thrust[1]
+    ##### back on screen when gone off screen #####
     if player.x < -player.radius:
         player.x = WIDTH + player.radius
     elif player.x > WIDTH + player.radius:
