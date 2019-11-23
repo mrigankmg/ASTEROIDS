@@ -65,7 +65,7 @@ while not game_over:
     if player.is_thrusting:
         player.thrust[0] += PLAYER_THRUST * math.cos(player.angle)
         player.thrust[1] -= PLAYER_THRUST * math.sin(player.angle)
-        fire_tip = (player.x - 6/3 * player.radius * math.cos(player.angle), player.y + 6/3 * player.radius * math.sin(player.angle))
+        fire_tip = (player.x - 5/3 * player.radius * math.cos(player.angle), player.y + 5/3 * player.radius * math.sin(player.angle))
         fire_rear_left = (player.x - player.radius * (2/3 * math.cos(player.angle) + 0.5 * math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) - 0.5 * math.cos(player.angle)))
         fire_rear_right = (player.x - player.radius * (2/3 * math.cos(player.angle) - 0.5 * math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) + 0.5 * math.cos(player.angle)))
         ##### draw fire #####
@@ -80,7 +80,7 @@ while not game_over:
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
-    pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
+    #pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
     player.angle += player.rotation
     player.x += player.thrust[0]
     player.y += player.thrust[1]
