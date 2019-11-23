@@ -5,17 +5,27 @@ from pygame.math import Vector2
 
 pyg.init()
 
+class Player:
+  def __init__(self, x, y, size, angle):
+    self.x = x
+    self.y = y
+    self.size = size
+    self.radius = size/2
+    self.angle = angle
+    self.rotation = 0
+    self.is_thrusting = False
+    self.thrust = [0, 0]
+
 WIDTH = 1280
 HEIGHT = 720
-BACKGROUND_COLOR   = (0, 0, 0)
+BACKGROUND_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255)
 PLAYER_COLOR = (245, 66, 66)
 TEXT_POS = (68, 25)
-PLAYER_POS = [(WIDTH//2 - 18, HEIGHT//2 + 24), (WIDTH//2, HEIGHT//2 - 24), (WIDTH//2 + 18, HEIGHT//2 + 24)]
-PLAYER_PIVOT_POS = (WIDTH//2, HEIGHT//2+8)
-PLAYER_ANGLE = 0
-PLAYER_VELOCITY = 4
-PLAYER_ROTATIONAL_VELOCITY = 0.1
+player = Player(WIDTH/2, HEIGHT/2, 30, math.radians(90))
+TURN_SPEED = math.radians(10)
+PLAYER_THRUST = 0.1 #acceleration of ship in px/s
+FRICTION = 0.01
 
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
@@ -25,43 +35,43 @@ textRect = text.get_rect()
 textRect.center = (TEXT_POS[0], TEXT_POS[1])
 game_over = False
 
-def rotate(clockwise=True):
-    global PLAYER_POS
-    if not clockwise:
-        s = math.sin(-PLAYER_ROTATIONAL_VELOCITY)
-        c = math.cos(-PLAYER_ROTATIONAL_VELOCITY)
-    else:
-        s = math.sin(PLAYER_ROTATIONAL_VELOCITY)
-        c = math.cos(PLAYER_ROTATIONAL_VELOCITY)
-    PLAYER_POS = [(PLAYER_POS[0][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[0][1] - PLAYER_PIVOT_POS[1]), (PLAYER_POS[1][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[1][1] - PLAYER_PIVOT_POS[1]), (PLAYER_POS[2][0] - PLAYER_PIVOT_POS[0], PLAYER_POS[2][1] - PLAYER_PIVOT_POS[1])]
-    rotated_player_pos = []
-    for i in PLAYER_POS:
-        xnew = i[0] * c - i[1] * s;
-        ynew = i[0] * s + i[1] * c;
-        rotated_player_pos.append((xnew + PLAYER_PIVOT_POS[0], ynew + PLAYER_PIVOT_POS[1]))
-    PLAYER_POS = rotated_player_pos
-
 while not game_over:
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
     keys_pressed = pyg.key.get_pressed()
+    # draw player
+    player_tip = (player.x + 4/3 * player.radius * math.cos(player.angle), player.y - 4/3 * player.radius * math.sin(player.angle))
+    player_rear_left = (player.x - player.radius * (2/3 * math.cos(player.angle) + math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) - math.cos(player.angle)))
+    player_rear_right = (player.x - player.radius * (2/3 * math.cos(player.angle) - math.sin(player.angle)), player.y + player.radius * (2/3 * math.sin(player.angle) + math.cos(player.angle)))
     if keys_pressed[pyg.K_ESCAPE]:
         sys.exit()
     else:
         if keys_pressed[pyg.K_UP]:
-            angle = (Vector2(PLAYER_POS[1][0], PLAYER_POS[1][1]) - Vector2(PLAYER_PIVOT_POS[0], PLAYER_PIVOT_POS[1])).as_polar()[1]
-            c = math.cos(math.radians(angle))
-            s = math.sin(math.radians(angle))
-            PLAYER_POS = [(PLAYER_POS[0][0] + PLAYER_VELOCITY * c, PLAYER_POS[0][1] + PLAYER_VELOCITY * s), (PLAYER_POS[1][0] + PLAYER_VELOCITY * c, PLAYER_POS[1][1] + PLAYER_VELOCITY * s), (PLAYER_POS[2][0] + PLAYER_VELOCITY * c, PLAYER_POS[2][1] + PLAYER_VELOCITY * s)]
-            PLAYER_PIVOT_POS = (PLAYER_PIVOT_POS[0] + PLAYER_VELOCITY * c, PLAYER_PIVOT_POS[1] + PLAYER_VELOCITY * s)
+            player.is_thrusting = True
+        else:
+            player.is_thrusting = False
         if keys_pressed[pyg.K_RIGHT]:
-            rotate()
+            player.rotation = -TURN_SPEED
         if keys_pressed[pyg.K_LEFT]:
-            rotate(clockwise=False)
+            player.rotation = TURN_SPEED
+        if not(keys_pressed[pyg.K_LEFT] or keys_pressed[pyg.K_RIGHT]):
+            player.rotation = 0
         if keys_pressed[pyg.K_SPACE]:
             pass
     screen.fill(BACKGROUND_COLOR)
-    pyg.draw.polygon(screen, PLAYER_COLOR, PLAYER_POS)
+    if player.is_thrusting:
+        player.thrust[0] += PLAYER_THRUST * math.cos(player.angle)
+        player.thrust[1] -= PLAYER_THRUST * math.sin(player.angle)
+    else:
+        player.thrust[0] -= FRICTION * player.thrust[0]
+        player.thrust[1] -= FRICTION * player.thrust[1]
+    pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
+    pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
+    pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
+    pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
+    player.angle += player.rotation
+    player.x += player.thrust[0]
+    player.y += player.thrust[1]
     screen.blit(text, textRect)
     pyg.display.flip()
