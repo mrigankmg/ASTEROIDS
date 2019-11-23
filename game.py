@@ -1,7 +1,6 @@
 import sys
 import pygame as pyg
 import math
-from pygame.math import Vector2
 
 pyg.init()
 
@@ -10,7 +9,7 @@ class Player:
     self.pos = [x, y]
     self.size = size
     self.radius = size/2
-    self.angle = angle
+    self.angle = math.radians(angle)
     self.rotation = 0
     self.is_thrusting = False
     self.thrust = [0, 0]
@@ -23,7 +22,7 @@ PLAYER_COLOR = (245, 66, 66) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
 TEXT_POS = (25, 15)
-player = Player(WIDTH/2, HEIGHT/2, 40, math.radians(90))
+player = Player(WIDTH/2, HEIGHT/2, 40, 90)
 TURN_SPEED = math.radians(10)
 PLAYER_THRUST = 0.1 #acceleration of ship in px/s
 FRICTION = 0.01
