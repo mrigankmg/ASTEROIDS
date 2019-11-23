@@ -24,7 +24,7 @@ PLAYER_COLOR = (245, 66, 66) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
 TEXT_POS = (68, 25)
-player = Player(WIDTH/2, HEIGHT/2, 30, math.radians(90))
+player = Player(WIDTH/2, HEIGHT/2, 40, math.radians(90))
 TURN_SPEED = math.radians(10)
 PLAYER_THRUST = 0.1 #acceleration of ship in px/s
 FRICTION = 0.01
@@ -80,7 +80,7 @@ while not game_over:
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
-    #pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
+    pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
     player.angle += player.rotation
     player.x += player.thrust[0]
     player.y += player.thrust[1]
