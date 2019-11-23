@@ -80,7 +80,9 @@ while not game_over:
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//10)
     pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//10)
+    ##### centroid check test #####
     pyg.draw.rect(screen, TEXT_COLOR, (player.x-1, player.y-1, 2, 2))
+    ###############################
     player.angle += player.rotation
     player.x += player.thrust[0]
     player.y += player.thrust[1]
