@@ -15,6 +15,7 @@ RED = (255, 0, 0)
 YELLOW = (255, 202, 54)
 ORANGE = (255, 136, 0)
 LIGHT_GREY = (179, 179, 179)
+GREEN = (17, 255, 0)
 TEXT_POS = (25, 15)
 TURN_SPEED = math.radians(10)
 PLAYER_SIZE = 40
@@ -152,13 +153,13 @@ while True:
                 end = (ast.pos[0] + ast.radius * ast.offset[i + 1] * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
             pyg.draw.line(screen, LIGHT_GREY, start, end, width=player.size//15)
             if SHOW_BOUNDING:
-                pyg.draw.circle(screen, LIGHT_BLUE, (ast.pos[0], ast.pos[1]), ast.radius, width=player.size//15)
+                pyg.draw.circle(screen, GREEN, (ast.pos[0], ast.pos[1]), ast.radius, width=player.size//15)
 
     if SHOW_CENTROID:
-        pyg.draw.rect(screen, LIGHT_GREY, (player.pos[0]-1, player.pos[1]-1, 2, 2))
+        pyg.draw.rect(screen, WHITE, (player.pos[0]-1, player.pos[1]-1, 2, 2))
 
     if SHOW_BOUNDING:
-        pyg.draw.circle(screen, LIGHT_GREY, (player.pos[0], player.pos[1]), player.radius, width=player.size//15)
+        pyg.draw.circle(screen, GREEN, (player.pos[0], player.pos[1]), player.radius, width=player.size//15)
 
     if not exploding:
         if player.blinkNum == 0:
