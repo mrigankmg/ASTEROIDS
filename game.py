@@ -122,6 +122,14 @@ while not game_over:
             pyg.draw.line(screen, ASTEROID_COLOR, start, end, width=player.size//15)
         ast.pos[0] += ast.xv
         ast.pos[1] += ast.yv
+        if ast.pos[0] < -ast.radius:
+            ast.pos[0] = WIDTH + ast.radius
+        elif ast.pos[0] > WIDTH + ast.radius:
+            ast.pos[0] = -ast.radius
+        if ast.pos[1] < -ast.radius:
+            ast.pos[1] = HEIGHT + ast.radius
+        elif ast.pos[1] > HEIGHT + ast.radius:
+            ast.pos[1] = -ast.radius
 
     ##### centroid check test #####
     # pyg.draw.rect(screen, TEXT_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
