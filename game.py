@@ -44,6 +44,12 @@ class Asteroid:
     self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
 
 asteroids = []
+player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
+screen = pyg.display.set_mode((WIDTH, HEIGHT))
+pyg.display.set_caption('Asteroids Neural Network')
+font = pyg.font.Font('trench100free.ttf', 40)
+text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
+game_over = False
 
 def createAsteroidBelt():
     global asteroids
@@ -53,12 +59,6 @@ def createAsteroidBelt():
         y = math.floor(random.random() * HEIGHT)
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
 
-player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
-screen = pyg.display.set_mode((WIDTH, HEIGHT))
-pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font('trench100free.ttf', 40)
-text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
-game_over = False
 createAsteroidBelt()
 
 while not game_over:
