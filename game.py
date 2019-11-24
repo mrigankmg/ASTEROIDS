@@ -1,5 +1,6 @@
 import sys
 import pygame as pyg
+from pygame.gfxdraw import filled_circle
 import math
 import random
 
@@ -9,7 +10,8 @@ WIDTH = 1280
 HEIGHT = 720
 BACKGROUND_COLOR = (0, 0, 0) #Black
 TEXT_COLOR = (255, 255, 255) #White
-PLAYER_COLOR = (245, 66, 66) #Red
+PLAYER_COLOR = (181, 248, 255) #Light Blue
+EXPLOSION_COLOR = (255, 0, 0) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
 ASTEROID_COLOR = (179, 179, 179) #Light Grey
@@ -18,11 +20,18 @@ TURN_SPEED = math.radians(10)
 PLAYER_SIZE = 40
 PLAYER_THRUST = 0.1 #acceleration of ship in px/s
 FRICTION = 0.01
-NUM_ASTEROIDS = 3
+NUM_ASTEROIDS = 5
 ASTEROID_SPEED = 1
 ASTEROID_SIZE = 100
 ASTEROID_VERTICES = 10
 ASTEROID_ROUGHNESS = 0.37
+PLAYER_EXPLODE_DURATION = 15
+PLAYER_INVINCIBILITY_DURATION = 150
+PLAYER_BLINK_DURATION = 5
+
+### developer flags ###
+SHOW_CENTROID = False
+SHOW_BOUNDING = False
 
 class Player:
   def __init__(self, x, y, size, angle):
@@ -33,6 +42,9 @@ class Player:
     self.rotation = 0
     self.is_thrusting = False
     self.thrust = [0, 0]
+    self.explodeTime = 0
+    self.blinkTime = PLAYER_BLINK_DURATION
+    self.blinkNum = PLAYER_INVINCIBILITY_DURATION/PLAYER_BLINK_DURATION
 
 class Asteroid:
   def __init__(self, x, y, size):
@@ -51,7 +63,6 @@ screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
 font = pyg.font.Font('trench100free.ttf', 40)
 text = font.render('SCORE:', True, TEXT_COLOR, BACKGROUND_COLOR)
-game_over = False
 
 def createAsteroidBelt():
     global asteroids
@@ -67,7 +78,12 @@ def createAsteroidBelt():
 
 createAsteroidBelt()
 
-while not game_over:
+def explodePlayer():
+    player.explodeTime = PLAYER_EXPLODE_DURATION
+
+while True:
+    blinkOn = player.blinkNum % 2 == 0
+    exploding = player.explodeTime > 0
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
@@ -98,18 +114,33 @@ while not game_over:
         fire_tip = (player.pos[0] - 5/3 * player.radius * math.cos(player.angle), player.pos[1] + 5/3 * player.radius * math.sin(player.angle))
         fire_rear_left = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) + 0.5 * math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) - 0.5 * math.cos(player.angle)))
         fire_rear_right = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) - 0.5 * math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) + 0.5 * math.cos(player.angle)))
-        ##### draw fire #####
-        pyg.draw.polygon(screen, FIRE_FILL_COLOR, [fire_tip, fire_rear_left, fire_rear_right])
-        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_left, width=player.size//12)
-        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_rear_left, fire_rear_right, width=player.size//12)
-        pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_right, width=player.size//12)
+        if not exploding and blinkOn:
+            ##### draw fire #####
+            pyg.draw.polygon(screen, FIRE_FILL_COLOR, [fire_tip, fire_rear_left, fire_rear_right])
+            pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_left, width=player.size//12)
+            pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_rear_left, fire_rear_right, width=player.size//12)
+            pyg.draw.line(screen, FIRE_OUTLINE_COLOR, fire_tip, fire_rear_right, width=player.size//12)
     else:
         player.thrust[0] -= FRICTION * player.thrust[0]
         player.thrust[1] -= FRICTION * player.thrust[1]
-    ##### draw player #####
-    pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//15)
-    pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//15)
-    pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//15)
+
+    if not exploding:
+        if blinkOn:
+            ##### draw player #####
+            pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_left, width=player.size//15)
+            pyg.draw.line(screen, PLAYER_COLOR, player_rear_left, player_rear_right, width=player.size//15)
+            pyg.draw.line(screen, PLAYER_COLOR, player_tip, player_rear_right, width=player.size//15)
+        if player.blinkNum > 0:
+            player.blinkTime -= 1
+            if player.blinkTime == 0:
+                player.blinkTime = PLAYER_BLINK_DURATION
+                player.blinkNum -= 1
+    else:
+        ##### draw explosion #####
+        filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 1.5), EXPLOSION_COLOR)
+        filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 1.2), FIRE_OUTLINE_COLOR)
+        filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 0.9), FIRE_FILL_COLOR)
+        filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 0.6), TEXT_COLOR)
 
     ##### draw asteroids #####
     for ast in asteroids:
@@ -120,8 +151,43 @@ while not game_over:
             else:
                 end = (ast.pos[0] + ast.radius * ast.offset[i + 1] * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
             pyg.draw.line(screen, ASTEROID_COLOR, start, end, width=player.size//15)
+            if SHOW_BOUNDING:
+                pyg.draw.circle(screen, PLAYER_COLOR, (ast.pos[0], ast.pos[1]), ast.radius, width=player.size//15)
+
+    if SHOW_CENTROID:
+        pyg.draw.rect(screen, ASTEROID_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
+
+    if SHOW_BOUNDING:
+        pyg.draw.circle(screen, ASTEROID_COLOR, (player.pos[0], player.pos[1]), player.radius, width=player.size//15)
+
+    if not exploding:
+        if player.blinkNum == 0:
+            for ast in asteroids:
+                distance_to_player = ((player.pos[0] - ast.pos[0]) ** 2 + (player.pos[1] - ast.pos[1]) ** 2) ** 0.5
+                if distance_to_player < ast.radius + player.radius:
+                    explodePlayer()
+        player.angle += player.rotation
+        player.pos[0] += player.thrust[0]
+        player.pos[1] += player.thrust[1]
+    else:
+        player.explodeTime -= 1
+        if player.explodeTime == 0:
+            player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
+
+    ##### player back on screen when gone off screen #####
+    if player.pos[0] < -player.radius:
+        player.pos[0] = WIDTH + player.radius
+    elif player.pos[0] > WIDTH + player.radius:
+        player.pos[0] = -player.radius
+    if player.pos[1] < -player.radius:
+        player.pos[1] = HEIGHT + player.radius
+    elif player.pos[1] > HEIGHT + player.radius:
+        player.pos[1] = -player.radius
+
+    for ast in asteroids:
         ast.pos[0] += ast.xv
         ast.pos[1] += ast.yv
+        ##### asteroids back on screen when gone off screen #####
         if ast.pos[0] < -ast.radius:
             ast.pos[0] = WIDTH + ast.radius
         elif ast.pos[0] > WIDTH + ast.radius:
@@ -131,20 +197,5 @@ while not game_over:
         elif ast.pos[1] > HEIGHT + ast.radius:
             ast.pos[1] = -ast.radius
 
-    ##### centroid check test #####
-    # pyg.draw.rect(screen, TEXT_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
-    ###############################
-    player.angle += player.rotation
-    player.pos[0] += player.thrust[0]
-    player.pos[1] += player.thrust[1]
-    ##### back on screen when gone off screen #####
-    if player.pos[0] < -player.radius:
-        player.pos[0] = WIDTH + player.radius
-    elif player.pos[0] > WIDTH + player.radius:
-        player.pos[0] = -player.radius
-    if player.pos[1] < -player.radius:
-        player.pos[1] = HEIGHT + player.radius
-    elif player.pos[1] > HEIGHT + player.radius:
-        player.pos[1] = -player.radius
     screen.blit(text, TEXT_POS)
     pyg.display.flip()
