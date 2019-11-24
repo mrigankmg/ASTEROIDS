@@ -22,6 +22,7 @@ NUM_ASTEROIDS = 3
 ASTEROID_SPEED = 1
 ASTEROID_SIZE = 100
 ASTEROID_VERTICES = 10
+ASTEROID_ROUGHNESS = 0.37
 
 class Player:
   def __init__(self, x, y, size, angle):
@@ -42,6 +43,7 @@ class Asteroid:
     self.radius = size/2
     self.angle =  math.radians(random.random() * 360)
     self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
+    self.offset = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
 
 asteroids = []
 player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
@@ -112,12 +114,14 @@ while not game_over:
     ##### draw asteroids #####
     for ast in asteroids:
         for i in range(ast.vertices):
-            start = (ast.pos[0] + ast.radius * math.cos(ast.angle + i * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + i * math.pi * 2 / ast.vertices))
+            start = (ast.pos[0] + ast.radius * ast.offset[i] * math.cos(ast.angle + i * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + i * math.pi * 2 / ast.vertices))
             if i == ast.vertices - 1:
-                end = (ast.pos[0] + ast.radius * math.cos(ast.angle), ast.pos[1] + ast.radius * math.sin(ast.angle))
+                end = (ast.pos[0] + ast.radius * ast.offset[0] * math.cos(ast.angle), ast.pos[1] + ast.radius * math.sin(ast.angle))
             else:
-                end = (ast.pos[0] + ast.radius * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
+                end = (ast.pos[0] + ast.radius * ast.offset[i + 1] * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
             pyg.draw.line(screen, ASTEROID_COLOR, start, end, width=player.size//15)
+        ast.pos[0] += ast.xv
+        ast.pos[1] += ast.yv
 
     ##### centroid check test #####
     # pyg.draw.rect(screen, TEXT_COLOR, (player.pos[0]-1, player.pos[1]-1, 2, 2))
