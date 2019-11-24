@@ -12,7 +12,7 @@ TEXT_COLOR = (255, 255, 255) #White
 PLAYER_COLOR = (245, 66, 66) #Red
 FIRE_FILL_COLOR = (255, 202, 54) #Yellow
 FIRE_OUTLINE_COLOR = (255, 136, 0) #Orange
-ASTEROID_COLOR = (235, 235, 235) #Light Grey
+ASTEROID_COLOR = (179, 179, 179) #Light Grey
 TEXT_POS = (25, 15)
 TURN_SPEED = math.radians(10)
 PLAYER_SIZE = 40
@@ -55,8 +55,12 @@ def createAsteroidBelt():
     global asteroids
     asteroids = []
     for i in range(NUM_ASTEROIDS):
-        x = math.floor(random.random() * WIDTH)
-        y = math.floor(random.random() * HEIGHT)
+        while True:
+            x = math.floor(random.random() * WIDTH)
+            y = math.floor(random.random() * HEIGHT)
+            distance_to_player = ((player.pos[0] - x) ** 2 + (player.pos[1] - y) ** 2) ** 0.5
+            if distance_to_player >= ASTEROID_SIZE * 2 + player.radius:
+                break
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
 
 createAsteroidBelt()
