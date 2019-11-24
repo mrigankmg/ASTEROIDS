@@ -58,15 +58,16 @@ class Asteroid:
     self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
     self.offset = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
 
-asteroids = []
 player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
 font = pyg.font.Font('trench100free.ttf', 40)
 text = font.render('SCORE:', True, WHITE, BLACK)
 
+def explodePlayer():
+    player.explodeTime = PLAYER_EXPLODE_DURATION
+
 def createAsteroidBelt():
-    global asteroids
     asteroids = []
     for i in range(NUM_ASTEROIDS):
         while True:
@@ -76,11 +77,9 @@ def createAsteroidBelt():
             if distance_to_player >= ASTEROID_SIZE * 2 + player.radius:
                 break
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
+    return asteroids
 
-createAsteroidBelt()
-
-def explodePlayer():
-    player.explodeTime = PLAYER_EXPLODE_DURATION
+asteroids = createAsteroidBelt()
 
 while True:
     blinkOn = player.blinkNum % 2 == 0
