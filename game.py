@@ -1,8 +1,9 @@
 import sys
 import pygame as pyg
-from pygame.gfxdraw import filled_circle
 import math
 import random
+
+from pygame.gfxdraw import filled_circle
 
 pyg.init()
 
@@ -23,7 +24,7 @@ PLAYER_THRUST = 0.1 #acceleration of ship in px/s
 FRICTION = 0.01
 NUM_ASTEROIDS = 5
 ASTEROID_SPEED = 1
-ASTEROID_SIZE = 100
+ASTEROID_SIZE = 133
 ASTEROID_VERTICES = 10
 ASTEROID_ROUGHNESS = 0.45
 PLAYER_EXPLODE_DURATION = 30
@@ -67,7 +68,7 @@ text = font.render('SCORE:', True, WHITE, BLACK)
 def explodePlayer():
     player.explodeTime = PLAYER_EXPLODE_DURATION
 
-def createAsteroidBelt():
+def createAsteroids():
     asteroids = []
     for i in range(NUM_ASTEROIDS):
         while True:
@@ -79,7 +80,7 @@ def createAsteroidBelt():
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
     return asteroids
 
-asteroids = createAsteroidBelt()
+asteroids = createAsteroids()
 
 while True:
     blinkOn = player.blinkNum % 2 == 0
