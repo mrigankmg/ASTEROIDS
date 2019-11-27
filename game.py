@@ -33,6 +33,7 @@ PLAYER_BLINK_DURATION = 5
 MAX_LASER = 8
 LASER_SPEED = 12
 LASER_DISTANCE = 0.35
+LASER_EXPLODE_DURATION = 3
 
 ### developer flags ###
 SHOW_CENTROID = False
@@ -70,6 +71,7 @@ class Laser:
         self.xv = LASER_SPEED * math.cos(player.angle)
         self.yv = -LASER_SPEED * math.sin(player.angle)
         self.distance = 0
+        self.explodeTime = 0
 
 player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
@@ -189,13 +191,17 @@ while True:
         pyg.draw.circle(screen, GREEN, player.pos, player.radius, width=player.size//15)
 
     for laser in player.lasers:
-        pyg.draw.circle(screen, WHITE, laser.pos, PLAYER_SIZE/15)
+        if laser.explodeTime == 0:
+            pyg.draw.circle(screen, WHITE, laser.pos, PLAYER_SIZE/15)
+        else:
+            filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.5), ORANGE)
+            filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.25), YELLOW)
 
     for i in range(len(asteroids) - 1, -1, -1):
         for j in range(len(player.lasers) - 1, -1, -1):
-            if ((player.lasers[j].pos[0] - asteroids[i].pos[0]) ** 2 + (player.lasers[j].pos[1] - asteroids[i].pos[1]) ** 2) ** 0.5 < asteroids[i].radius:
-                player.lasers = player.lasers[:j] + player.lasers[j + 1:]
+            if player.lasers[j].explodeTime == 0 and ((player.lasers[j].pos[0] - asteroids[i].pos[0]) ** 2 + (player.lasers[j].pos[1] - asteroids[i].pos[1]) ** 2) ** 0.5 < asteroids[i].radius:
                 destroyAsteroid(i)
+                player.lasers[j].explodeTime = math.ceil(LASER_EXPLODE_DURATION)
                 break
 
     if not exploding:
@@ -228,17 +234,22 @@ while True:
         if player.lasers[i].distance > LASER_DISTANCE * WIDTH:
             player.lasers = player.lasers[:i] + player.lasers[i + 1:]
         else:
-            player.lasers[i].pos[0] += player.lasers[i].xv
-            player.lasers[i].pos[1] += player.lasers[i].yv
-            player.lasers[i].distance += (player.lasers[i].xv ** 2 + player.lasers[i].yv ** 2) ** 0.5
-            if player.lasers[i].pos[0] < 0:
-                player.lasers[i].pos[0] = WIDTH
-            elif player.lasers[i].pos[0] > WIDTH:
-                player.lasers[i].pos[0] = 0
-            if player.lasers[i].pos[1] < 0:
-                player.lasers[i].pos[1] = HEIGHT
-            elif player.lasers[i].pos[1] > HEIGHT:
-                player.lasers[i].pos[1] = 0
+            if player.lasers[i].explodeTime > 0:
+                player.lasers[i].explodeTime -= 1
+                if player.lasers[i].explodeTime == 0:
+                    player.lasers = player.lasers[:i] + player.lasers[i + 1:]
+            else:
+                player.lasers[i].pos[0] += player.lasers[i].xv
+                player.lasers[i].pos[1] += player.lasers[i].yv
+                player.lasers[i].distance += (player.lasers[i].xv ** 2 + player.lasers[i].yv ** 2) ** 0.5
+                if player.lasers[i].pos[0] < 0:
+                    player.lasers[i].pos[0] = WIDTH
+                elif player.lasers[i].pos[0] > WIDTH:
+                    player.lasers[i].pos[0] = 0
+                if player.lasers[i].pos[1] < 0:
+                    player.lasers[i].pos[1] = HEIGHT
+                elif player.lasers[i].pos[1] > HEIGHT:
+                    player.lasers[i].pos[1] = 0
 
     for ast in asteroids:
         ast.pos[0] += ast.xv
