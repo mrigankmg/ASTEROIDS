@@ -34,6 +34,7 @@ LASER_SPEED = 7
 LASER_DISTANCE = 0.35
 LASER_EXPLODE_DURATION = 3
 LEVEL_TEXT_SIZE = 80
+LEVEL_TEXT_ALPHA_SPEED = 1.5
 SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
 
@@ -217,7 +218,7 @@ while True:
         level_text = font.render('LEVEL ' + str(level), True, WHITE)
         level_text.set_alpha(level_text_alpha)
         screen.blit(level_text, level_text.get_rect(center=(WIDTH/2, HEIGHT * 0.75)))
-        level_text_alpha -= 1.5
+        level_text_alpha -= LEVEL_TEXT_ALPHA_SPEED
 
     screen.blit(score_text, SCORE_TEXT_POS)
 
