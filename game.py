@@ -17,12 +17,11 @@ ORANGE = (255, 136, 0)
 LIGHT_GREY = (179, 179, 179)
 GREEN = (17, 255, 0)
 TEAL = (70, 189, 185)
-TEXT_POS = (25, 15)
-TURN_SPEED = math.radians(6)
+TURN_SPEED = math.radians(5)
 PLAYER_SIZE = 40
 PLAYER_THRUST = 0.1
 FRICTION = 0.01
-NUM_ASTEROIDS = 5
+NUM_ASTEROIDS = 3
 ASTEROID_SPEED = 1
 ASTEROID_SIZE = 133
 ASTEROID_VERTICES = 10
@@ -31,9 +30,12 @@ PLAYER_EXPLODE_DURATION = 30
 PLAYER_INVINCIBILITY_DURATION = 150
 PLAYER_BLINK_DURATION = 5
 MAX_LASER = 8
-LASER_SPEED = 12
+LASER_SPEED = 7
 LASER_DISTANCE = 0.35
 LASER_EXPLODE_DURATION = 3
+LEVEL_TEXT_SIZE = 80
+SCORE_TEXT_POS = (25, 15)
+SCORE_TEXT_SIZE = 40
 
 ### developer flags ###
 SHOW_CENTROID = False
@@ -56,14 +58,15 @@ class Player:
 
 class Asteroid:
   def __init__(self, x, y, size):
+    self.speed_multiplier = 1 + 0.1 * level
     self.pos = [x, y]
-    self.xv = random.random() * ASTEROID_SPEED * (1 if random.random() < 0.5 else -1)
-    self.yv = random.random() * ASTEROID_SPEED * (1 if random.random() < 0.5 else -1)
+    self.xv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
+    self.yv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
     self.size = size
     self.radius = math.ceil(size/2)
     self.angle =  math.radians(random.random() * 360)
     self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
-    self.offset = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
+    self.offsets = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
 
 class Laser:
     def __init__(self, x, y):
@@ -73,18 +76,9 @@ class Laser:
         self.distance = 0
         self.explodeTime = 0
 
-player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
-screen = pyg.display.set_mode((WIDTH, HEIGHT))
-pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font('trench100free.ttf', 40)
-text = font.render('SCORE:', True, WHITE, BLACK)
-
-def explodePlayer():
-    player.explodeTime = PLAYER_EXPLODE_DURATION
-
 def createAsteroids():
     asteroids = []
-    for i in range(NUM_ASTEROIDS):
+    for i in range(NUM_ASTEROIDS + level):
         while True:
             x = math.floor(random.random() * WIDTH)
             y = math.floor(random.random() * HEIGHT)
@@ -94,19 +88,40 @@ def createAsteroids():
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
     return asteroids
 
-asteroids = createAsteroids()
+def newGame():
+    global player, level
+    level = 0
+    player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
+    newLevel()
+
+def newLevel():
+    global asteroids, level_text, level_text_alpha, level
+    level_text_alpha = 255
+    asteroids = createAsteroids()
+
+newGame()
+screen = pyg.display.set_mode((WIDTH, HEIGHT))
+pyg.display.set_caption('Asteroids Neural Network')
+font = pyg.font.Font('trench100free.ttf', 40)
+score_text = font.render('SCORE:', True, WHITE)
 
 def shootLaser():
     if player.canShoot and len(player.lasers) < MAX_LASER:
         player.lasers.append(Laser(player.pos[0] + 4/3 * player.radius * math.cos(player.angle), player.pos[1] - 4/3 * player.radius * math.sin(player.angle)))
     player.canShoot = False
 
+def explodePlayer():
+    player.explodeTime = PLAYER_EXPLODE_DURATION
+
 def destroyAsteroid(index):
-    global asteroids
+    global asteroids, level
     if asteroids[index].size > ASTEROID_SIZE/4:
         asteroids.append(Asteroid(asteroids[index].pos[0], asteroids[index].pos[1], asteroids[index].size/2))
         asteroids.append(Asteroid(asteroids[index].pos[0], asteroids[index].pos[1], asteroids[index].size/2))
     asteroids = asteroids[:index] + asteroids[index + 1:]
+    if len(asteroids) == 0:
+        level += 1
+        newLevel()
 
 while True:
     blinkOn = player.blinkNum % 2 == 0
@@ -175,11 +190,11 @@ while True:
     ##### draw asteroids #####
     for ast in asteroids:
         for i in range(ast.vertices):
-            start = (ast.pos[0] + ast.radius * ast.offset[i] * math.cos(ast.angle + i * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + i * math.pi * 2 / ast.vertices))
+            start = (ast.pos[0] + ast.radius * ast.offsets[i] * math.cos(ast.angle + i * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + i * math.pi * 2 / ast.vertices))
             if i == ast.vertices - 1:
-                end = (ast.pos[0] + ast.radius * ast.offset[0] * math.cos(ast.angle), ast.pos[1] + ast.radius * math.sin(ast.angle))
+                end = (ast.pos[0] + ast.radius * ast.offsets[0] * math.cos(ast.angle), ast.pos[1] + ast.radius * math.sin(ast.angle))
             else:
-                end = (ast.pos[0] + ast.radius * ast.offset[i + 1] * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
+                end = (ast.pos[0] + ast.radius * ast.offsets[i + 1] * math.cos(ast.angle + (i + 1) * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + (i + 1) * math.pi * 2 / ast.vertices))
             pyg.draw.line(screen, LIGHT_GREY, start, end, width=player.size//15)
             if SHOW_BOUNDING:
                 pyg.draw.circle(screen, GREEN, ast.pos, ast.radius, width=player.size//15)
@@ -196,6 +211,15 @@ while True:
         else:
             filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.5), ORANGE)
             filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.25), YELLOW)
+
+    if level_text_alpha > 0:
+        font = pyg.font.Font('trench100free.ttf', LEVEL_TEXT_SIZE)
+        level_text = font.render('LEVEL ' + str(level), True, WHITE)
+        level_text.set_alpha(level_text_alpha)
+        screen.blit(level_text, level_text.get_rect(center=(WIDTH/2, HEIGHT * 0.75)))
+        level_text_alpha -= 1.5
+
+    screen.blit(score_text, SCORE_TEXT_POS)
 
     for i in range(len(asteroids) - 1, -1, -1):
         for j in range(len(player.lasers) - 1, -1, -1):
@@ -264,5 +288,4 @@ while True:
         elif ast.pos[1] > HEIGHT + ast.radius:
             ast.pos[1] = -ast.radius
 
-    screen.blit(text, TEXT_POS)
     pyg.display.flip()
