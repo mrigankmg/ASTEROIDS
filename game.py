@@ -37,6 +37,7 @@ LEVEL_TEXT_SIZE = 80
 LEVEL_TEXT_ALPHA_SPEED = 1.5
 SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
+MAX_LIVES = 3
 
 ### developer flags ###
 SHOW_CENTROID = False
@@ -90,8 +91,9 @@ def createAsteroids():
     return asteroids
 
 def newGame():
-    global player, level
+    global player, level, lives
     level = 0
+    lives = MAX_LIVES
     player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
     newLevel()
 
@@ -105,6 +107,16 @@ screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
 font = pyg.font.Font('trench100free.ttf', 40)
 score_text = font.render('SCORE:', True, WHITE)
+
+def drawPlayer(x, y, angle, radius, color):
+    ##### player coordinate and angle update #####
+    player_tip = (x + 4/3 * radius * math.cos(angle), y - 4/3 * radius * math.sin(angle))
+    player_rear_left = (x - radius * (2/3 * math.cos(angle) + math.sin(angle)), y + radius * (2/3 * math.sin(angle) - math.cos(angle)))
+    player_rear_right = (x - radius * (2/3 * math.cos(angle) - math.sin(angle)), y + radius * (2/3 * math.sin(angle) + math.cos(angle)))
+    ##### draw player #####
+    pyg.draw.line(screen, color, player_tip, player_rear_left, width=player.size//15)
+    pyg.draw.line(screen, color, player_rear_left, player_rear_right, width=player.size//15)
+    pyg.draw.line(screen, color, player_tip, player_rear_right, width=player.size//15)
 
 def shootLaser():
     if player.canShoot and len(player.lasers) < MAX_LASER:
@@ -124,16 +136,15 @@ def destroyAsteroid(index):
         level += 1
         newLevel()
 
+def gameOver():
+    pass
+
 while True:
     blinkOn = player.blinkNum % 2 == 0
     exploding = player.explodeTime > 0
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
-    ##### player coordinate and angle update #####
-    player_tip = (player.pos[0] + 4/3 * player.radius * math.cos(player.angle), player.pos[1] - 4/3 * player.radius * math.sin(player.angle))
-    player_rear_left = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) + math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) - math.cos(player.angle)))
-    player_rear_right = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) - math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) + math.cos(player.angle)))
     keys_pressed = pyg.key.get_pressed()
     if keys_pressed[pyg.K_ESCAPE]:
         sys.exit()
@@ -172,10 +183,7 @@ while True:
 
     if not exploding:
         if blinkOn:
-            ##### draw player #####
-            pyg.draw.line(screen, TEAL, player_tip, player_rear_left, width=player.size//15)
-            pyg.draw.line(screen, TEAL, player_rear_left, player_rear_right, width=player.size//15)
-            pyg.draw.line(screen, TEAL, player_tip, player_rear_right, width=player.size//15)
+            drawPlayer(player.pos[0], player.pos[1], player.angle, player.radius, TEAL)
         if player.blinkNum > 0:
             player.blinkTime -= 1
             if player.blinkTime == 0:
@@ -222,6 +230,10 @@ while True:
 
     screen.blit(score_text, SCORE_TEXT_POS)
 
+    for i in range(lives):
+        color = RED if exploding and i == lives - 1 else WHITE
+        drawPlayer(WIDTH - PLAYER_SIZE - i * PLAYER_SIZE * 1.2, PLAYER_SIZE, math.radians(90), player.size/2.5, color)
+
     for i in range(len(asteroids) - 1, -1, -1):
         for j in range(len(player.lasers) - 1, -1, -1):
             if player.lasers[j].explodeTime == 0 and ((player.lasers[j].pos[0] - asteroids[i].pos[0]) ** 2 + (player.lasers[j].pos[1] - asteroids[i].pos[1]) ** 2) ** 0.5 < asteroids[i].radius:
@@ -243,7 +255,11 @@ while True:
     else:
         player.explodeTime -= 1
         if player.explodeTime == 0:
-            player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
+            lives -= 1
+            if lives == 0:
+                gameOver()
+            else:
+                player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
 
     ##### player back on screen when gone off screen #####
     if player.pos[0] < -player.radius:
