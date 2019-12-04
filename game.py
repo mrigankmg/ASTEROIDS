@@ -34,7 +34,8 @@ LASER_SPEED = 7
 LASER_DISTANCE = 0.35
 LASER_EXPLODE_DURATION = 3
 TEXT_SIZE = 80
-TEXT_ALPHA_SPEED = 1.5
+MAX_TEXT_DURATION = 60
+TEXT_ALPHA_SPEED = 2.5
 SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
 MAX_LIVES = 3
@@ -99,8 +100,11 @@ def newGame():
     newLevel()
 
 def newLevel():
-    global asteroids, text, text_alpha, level
-    text_alpha = 255
+    global asteroids, text, text_alpha, level, text_fade_in, text_fade_out, text_duration
+    text_fade_in = True
+    text_fade_out = False
+    text_alpha = 2.5
+    text_duration = MAX_TEXT_DURATION
     asteroids = createAsteroids()
 
 newGame()
@@ -138,9 +142,10 @@ def destroyAsteroid(index):
         newLevel()
 
 def gameOver():
-    global text_alpha
+    global text_alpha, text_fade_in
     player.dead = True
-    text_alpha = 255
+    text_alpha = 2.5
+    text_fade_in = True
 
 while True:
     blinkOn = player.blinkNum % 2 == 0
@@ -228,11 +233,25 @@ while True:
         font = pyg.font.Font('trench100free.ttf', TEXT_SIZE)
         if not player.dead:
             text = font.render('LEVEL ' + str(level), True, WHITE)
+            position = text.get_rect(center=(WIDTH/2, HEIGHT * 0.75))
         else:
             text = font.render('GAME OVER', True, WHITE)
+            position = text.get_rect(center=(WIDTH/2, HEIGHT/2))
         text.set_alpha(text_alpha)
-        screen.blit(text, text.get_rect(center=(WIDTH/2, HEIGHT * 0.75)))
-        text_alpha -= TEXT_ALPHA_SPEED
+        screen.blit(text, position)
+        if text_fade_in:
+            text_alpha += TEXT_ALPHA_SPEED
+            if text_alpha == 255:
+                text_fade_in = False
+        elif text_duration > 0:
+            text_duration -= 1
+            if text_duration == 0:
+                text_fade_out = True
+        if text_fade_out:
+            text_alpha -= TEXT_ALPHA_SPEED
+            if text_alpha == 0:
+                text_fade_out = False
+                text_duration = MAX_TEXT_DURATION
     elif player.dead:
         newGame()
 
@@ -256,8 +275,6 @@ while True:
                 if distance_to_player < asteroids[i].radius + player.radius:
                     destroyAsteroid(i)
                     explodePlayer()
-                    if lives == 1:
-                        gameOver()
                     break
         player.angle += player.rotation
         player.pos[0] += player.thrust[0]
@@ -268,6 +285,8 @@ while True:
             lives -= 1
             if lives > 0:
                 player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
+            else:
+                gameOver()
 
     ##### player back on screen when gone off screen #####
     if player.pos[0] < -player.radius:
