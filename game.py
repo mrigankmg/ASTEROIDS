@@ -148,26 +148,25 @@ while True:
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
+    keys_pressed = pyg.key.get_pressed()
+    if keys_pressed[pyg.K_ESCAPE]:
+        sys.exit()
     if not player.dead:
-        keys_pressed = pyg.key.get_pressed()
-        if keys_pressed[pyg.K_ESCAPE]:
-            sys.exit()
+        if keys_pressed[pyg.K_UP]:
+            player.is_thrusting = True
         else:
-            if keys_pressed[pyg.K_UP]:
-                player.is_thrusting = True
+            player.is_thrusting = False
+        if keys_pressed[pyg.K_RIGHT]:
+            player.rotation = -TURN_SPEED
+        if keys_pressed[pyg.K_LEFT]:
+            player.rotation = TURN_SPEED
+        if not(keys_pressed[pyg.K_LEFT] or keys_pressed[pyg.K_RIGHT]):
+            player.rotation = 0
+        if not exploding:
+            if keys_pressed[pyg.K_SPACE]:
+                shootLaser()
             else:
-                player.is_thrusting = False
-            if keys_pressed[pyg.K_RIGHT]:
-                player.rotation = -TURN_SPEED
-            if keys_pressed[pyg.K_LEFT]:
-                player.rotation = TURN_SPEED
-            if not(keys_pressed[pyg.K_LEFT] or keys_pressed[pyg.K_RIGHT]):
-                player.rotation = 0
-            if not exploding:
-                if keys_pressed[pyg.K_SPACE]:
-                    shootLaser()
-                else:
-                    player.canShoot = True
+                player.canShoot = True
     screen.fill(BLACK)
     if player.is_thrusting and not player.dead:
         player.thrust[0] += PLAYER_THRUST * math.cos(player.angle)
