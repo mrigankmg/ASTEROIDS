@@ -33,8 +33,8 @@ MAX_LASER = 8
 LASER_SPEED = 7
 LASER_DISTANCE = 0.35
 LASER_EXPLODE_DURATION = 3
-LEVEL_TEXT_SIZE = 80
-LEVEL_TEXT_ALPHA_SPEED = 1.5
+TEXT_SIZE = 80
+TEXT_ALPHA_SPEED = 1.5
 SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
 MAX_LIVES = 3
@@ -57,6 +57,7 @@ class Player:
     self.blinkNum = PLAYER_INVINCIBILITY_DURATION/PLAYER_BLINK_DURATION
     self.canShoot = True
     self.lasers = []
+    self.dead = False
 
 class Asteroid:
   def __init__(self, x, y, size):
@@ -98,8 +99,8 @@ def newGame():
     newLevel()
 
 def newLevel():
-    global asteroids, level_text, level_text_alpha, level
-    level_text_alpha = 255
+    global asteroids, text, text_alpha, level
+    text_alpha = 255
     asteroids = createAsteroids()
 
 newGame()
@@ -137,7 +138,9 @@ def destroyAsteroid(index):
         newLevel()
 
 def gameOver():
-    pass
+    global text_alpha
+    player.dead = True
+    text_alpha = 255
 
 while True:
     blinkOn = player.blinkNum % 2 == 0
@@ -145,27 +148,28 @@ while True:
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             sys.exit()
-    keys_pressed = pyg.key.get_pressed()
-    if keys_pressed[pyg.K_ESCAPE]:
-        sys.exit()
-    else:
-        if keys_pressed[pyg.K_UP]:
-            player.is_thrusting = True
+    if not player.dead:
+        keys_pressed = pyg.key.get_pressed()
+        if keys_pressed[pyg.K_ESCAPE]:
+            sys.exit()
         else:
-            player.is_thrusting = False
-        if keys_pressed[pyg.K_RIGHT]:
-            player.rotation = -TURN_SPEED
-        if keys_pressed[pyg.K_LEFT]:
-            player.rotation = TURN_SPEED
-        if not(keys_pressed[pyg.K_LEFT] or keys_pressed[pyg.K_RIGHT]):
-            player.rotation = 0
-        if not exploding:
-            if keys_pressed[pyg.K_SPACE]:
-                shootLaser()
+            if keys_pressed[pyg.K_UP]:
+                player.is_thrusting = True
             else:
-                player.canShoot = True
+                player.is_thrusting = False
+            if keys_pressed[pyg.K_RIGHT]:
+                player.rotation = -TURN_SPEED
+            if keys_pressed[pyg.K_LEFT]:
+                player.rotation = TURN_SPEED
+            if not(keys_pressed[pyg.K_LEFT] or keys_pressed[pyg.K_RIGHT]):
+                player.rotation = 0
+            if not exploding:
+                if keys_pressed[pyg.K_SPACE]:
+                    shootLaser()
+                else:
+                    player.canShoot = True
     screen.fill(BLACK)
-    if player.is_thrusting:
+    if player.is_thrusting and not player.dead:
         player.thrust[0] += PLAYER_THRUST * math.cos(player.angle)
         player.thrust[1] -= PLAYER_THRUST * math.sin(player.angle)
         fire_tip = (player.pos[0] - 5/3 * player.radius * math.cos(player.angle), player.pos[1] + 5/3 * player.radius * math.sin(player.angle))
@@ -182,7 +186,7 @@ while True:
         player.thrust[1] -= FRICTION * player.thrust[1]
 
     if not exploding:
-        if blinkOn:
+        if blinkOn and not player.dead:
             drawPlayer(player.pos[0], player.pos[1], player.angle, player.radius, TEAL)
         if player.blinkNum > 0:
             player.blinkTime -= 1
@@ -221,12 +225,17 @@ while True:
             filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.5), ORANGE)
             filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.25), YELLOW)
 
-    if level_text_alpha > 0:
-        font = pyg.font.Font('trench100free.ttf', LEVEL_TEXT_SIZE)
-        level_text = font.render('LEVEL ' + str(level), True, WHITE)
-        level_text.set_alpha(level_text_alpha)
-        screen.blit(level_text, level_text.get_rect(center=(WIDTH/2, HEIGHT * 0.75)))
-        level_text_alpha -= LEVEL_TEXT_ALPHA_SPEED
+    if text_alpha > 0:
+        font = pyg.font.Font('trench100free.ttf', TEXT_SIZE)
+        if not player.dead:
+            text = font.render('LEVEL ' + str(level), True, WHITE)
+        else:
+            text = font.render('GAME OVER', True, WHITE)
+        text.set_alpha(text_alpha)
+        screen.blit(text, text.get_rect(center=(WIDTH/2, HEIGHT * 0.75)))
+        text_alpha -= TEXT_ALPHA_SPEED
+    elif player.dead:
+        newGame()
 
     screen.blit(score_text, SCORE_TEXT_POS)
 
@@ -242,12 +251,14 @@ while True:
                 break
 
     if not exploding:
-        if player.blinkNum == 0:
+        if player.blinkNum == 0 and not player.dead:
             for i in range(len(asteroids) - 1, -1, -1):
                 distance_to_player = ((player.pos[0] - asteroids[i].pos[0]) ** 2 + (player.pos[1] - asteroids[i].pos[1]) ** 2) ** 0.5
                 if distance_to_player < asteroids[i].radius + player.radius:
                     destroyAsteroid(i)
                     explodePlayer()
+                    if lives == 1:
+                        gameOver()
                     break
         player.angle += player.rotation
         player.pos[0] += player.thrust[0]
@@ -256,9 +267,7 @@ while True:
         player.explodeTime -= 1
         if player.explodeTime == 0:
             lives -= 1
-            if lives == 0:
-                gameOver()
-            else:
+            if lives > 0:
                 player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
 
     ##### player back on screen when gone off screen #####
