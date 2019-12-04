@@ -39,6 +39,7 @@ TEXT_ALPHA_SPEED = 2.5
 SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
 MAX_LIVES = 3
+FONT_STYLE = 'trench100free.ttf'
 
 ### developer flags ###
 SHOW_CENTROID = False
@@ -109,7 +110,7 @@ def newLevel():
 newGame()
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font('trench100free.ttf', 40)
+font = pyg.font.Font(FONT_STYLE, 40)
 score_text = font.render('SCORE:', True, WHITE)
 
 def drawPlayer(x, y, angle, radius, color):
@@ -229,7 +230,7 @@ while True:
             filled_circle(screen, int(laser.pos[0]), int(laser.pos[1]), int(player.radius * 0.25), YELLOW)
 
     if text_alpha > 0:
-        font = pyg.font.Font('trench100free.ttf', TEXT_SIZE)
+        font = pyg.font.Font(FONT_STYLE, TEXT_SIZE)
         if not player.dead:
             text = font.render('LEVEL ' + str(level), True, WHITE)
             position = text.get_rect(center=(WIDTH/2, HEIGHT * 0.75))
