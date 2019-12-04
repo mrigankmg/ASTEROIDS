@@ -62,7 +62,7 @@ class Player:
 
 class Asteroid:
   def __init__(self, x, y, size):
-    self.speed_multiplier = 1 + 0.1 * level
+    self.speed_multiplier = 1 + 0.15 * level
     self.pos = [x, y]
     self.xv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
     self.yv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
