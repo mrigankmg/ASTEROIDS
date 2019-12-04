@@ -100,9 +100,8 @@ def newGame():
     newLevel()
 
 def newLevel():
-    global asteroids, text, text_alpha, level, text_fade_in, text_fade_out, text_duration
+    global asteroids, text, text_alpha, level, text_fade_in, text_duration
     text_fade_in = True
-    text_fade_out = False
     text_alpha = 2.5
     text_duration = MAX_TEXT_DURATION
     asteroids = createAsteroids()
@@ -245,12 +244,9 @@ while True:
                 text_fade_in = False
         elif text_duration > 0:
             text_duration -= 1
-            if text_duration == 0:
-                text_fade_out = True
-        if text_fade_out:
+        if text_duration == 0:
             text_alpha -= TEXT_ALPHA_SPEED
             if text_alpha == 0:
-                text_fade_out = False
                 text_duration = MAX_TEXT_DURATION
     elif player.dead:
         newGame()
