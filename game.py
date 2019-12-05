@@ -101,9 +101,7 @@ def newGame():
     global player, level, lives, score, highScore
     score = 0
     level = 0
-    dirname = os.path.dirname('./' + HIGH_SCORE_FILE)
-    if not os.path.exists(dirname):
-       os.makedirs(dirname)
+    if not os.path.exists('./' + HIGH_SCORE_FILE):
        highScore = 0
     else:
         file_in = open('./' + HIGH_SCORE_FILE, 'r')
