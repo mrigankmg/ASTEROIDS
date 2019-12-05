@@ -288,7 +288,7 @@ while True:
     screen.blit(score_text, (player.size/2, player.size/2.5))
 
     high_score_text = score_font.render('TOP SCORE: ' + str(highScore), True, WHITE)
-    position = text.get_rect(center=(WIDTH/2, player.size))
+    position = high_score_text.get_rect(center=(WIDTH/2, player.size))
     screen.blit(high_score_text, (position[0], player.size/2.5))
 
     for i in range(lives):
