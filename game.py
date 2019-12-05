@@ -50,6 +50,7 @@ HIGH_SCORE_FILE = "high_score.txt"
 SHOW_CENTROID = False
 SHOW_BOUNDING = False
 SOUND_ON = True
+MUSIC_ON = True
 
 class Player:
   def __init__(self, x, y, size, angle):
@@ -87,11 +88,44 @@ class Laser:
         self.distance = 0
         self.explodeTime = 0
 
+class Music:
+    def __init__(self, low, high):
+        self.low = low
+        self.high = high
+        self.isLow = True
+        self.tempo = 75
+        self.beatTime = 0
+
+    def play(self):
+        if self.isLow:
+            mixer.Channel(4).play(mixer.Sound(self.low))
+        else:
+            mixer.Channel(4).play(mixer.Sound(self.high))
+        self.isLow = not self.isLow
+
+    def tick(self):
+        if self.beatTime == 0:
+            self.play()
+            self.beatTime = math.ceil(self.tempo)
+        else:
+            self.beatTime -= 1
+
+    def setAsteroidRatio(self, ratio):
+        self.tempo = 75 - 0.8 * (75 - ratio * 75)
+
 if not SOUND_ON:
-    for i in range(mixer.get_num_channels()):
+    for i in range(4):
         mixer.Channel(i).set_volume(0)
 
+if not MUSIC_ON:
+    mixer.Channel(4).set_volume(0)
+
+music = Music('./sounds/music-low.ogg', './sounds/music-high.ogg')
+
 def createAsteroids():
+    global totalAsteroids, asteroidsLeft
+    totalAsteroids = (NUM_ASTEROIDS + level) * 7
+    asteroidsLeft = totalAsteroids
     asteroids = []
     for i in range(NUM_ASTEROIDS + level):
         while True:
@@ -101,6 +135,7 @@ def createAsteroids():
             if distance_to_player >= ASTEROID_SIZE * 2 + player.radius:
                 break
         asteroids.append(Asteroid(x, y, ASTEROID_SIZE))
+    music.setAsteroidRatio(1)
     return asteroids
 
 def newGame():
@@ -151,7 +186,7 @@ def explodePlayer():
     player.explodeTime = PLAYER_EXPLODE_DURATION
 
 def destroyAsteroid(index):
-    global asteroids, level, score, highScore
+    global asteroids, level, score, highScore, music, asteroidsLeft, totalAsteroids
     mixer.Channel(2).play(mixer.Sound('./sounds/hit.ogg'))
     if asteroids[index].size > ASTEROID_SIZE/4:
         if asteroids[index].size == ASTEROID_SIZE:
@@ -165,6 +200,8 @@ def destroyAsteroid(index):
     if score > highScore:
         highScore = score
     asteroids = asteroids[:index] + asteroids[index + 1:]
+    asteroidsLeft -= 1
+    music.setAsteroidRatio(1 if asteroidsLeft == 0 else asteroidsLeft/totalAsteroids)
     if len(asteroids) == 0:
         level += 1
         newLevel()
@@ -182,6 +219,9 @@ def gameOver():
 while True:
     blinkOn = player.blinkNum % 2 == 0
     exploding = player.explodeTime > 0
+
+    music.tick()
+
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
             if score == highScore:
