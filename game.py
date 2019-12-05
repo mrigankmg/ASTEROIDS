@@ -1,5 +1,6 @@
 import sys
 import pygame as pyg
+import pygame.mixer as mixer
 import math
 import random
 import os
@@ -98,7 +99,7 @@ def createAsteroids():
     return asteroids
 
 def newGame():
-    global player, level, lives, score, highScore
+    global player, level, lives, score, highScore, thrustMusicPlaying
     score = 0
     level = 0
     if not os.path.exists('./' + HIGH_SCORE_FILE):
@@ -108,6 +109,7 @@ def newGame():
         highScore = int(file_in.read())
         file_in.close()
     lives = MAX_LIVES
+    thrustMusicPlaying = False
     player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
     newLevel()
 
@@ -135,14 +137,17 @@ def drawPlayer(x, y, angle, radius, color):
 
 def shootLaser():
     if player.canShoot and len(player.lasers) < MAX_LASER:
+        mixer.Channel(0).play(mixer.Sound('./sounds/laser.ogg'))
         player.lasers.append(Laser(player.pos[0] + 4/3 * player.radius * math.cos(player.angle), player.pos[1] - 4/3 * player.radius * math.sin(player.angle)))
     player.canShoot = False
 
 def explodePlayer():
+    mixer.Channel(1).play(mixer.Sound('./sounds/explode.ogg'))
     player.explodeTime = PLAYER_EXPLODE_DURATION
 
 def destroyAsteroid(index):
     global asteroids, level, score, highScore
+    mixer.Channel(2).play(mixer.Sound('./sounds/hit.ogg'))
     if asteroids[index].size > ASTEROID_SIZE/4:
         if asteroids[index].size == ASTEROID_SIZE:
             score += LRG_ASTEROID_POINTS
@@ -210,12 +215,18 @@ while True:
         fire_rear_left = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) + 0.5 * math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) - 0.5 * math.cos(player.angle)))
         fire_rear_right = (player.pos[0] - player.radius * (2/3 * math.cos(player.angle) - 0.5 * math.sin(player.angle)), player.pos[1] + player.radius * (2/3 * math.sin(player.angle) + 0.5 * math.cos(player.angle)))
         if not exploding and blinkOn:
+            if not thrustMusicPlaying:
+                mixer.Channel(3).play(mixer.Sound('./sounds/thrust.ogg'), loops=-1)
+                thrustMusicPlaying = True
             ##### draw fire #####
             pyg.draw.polygon(screen, YELLOW, [fire_tip, fire_rear_left, fire_rear_right])
             pyg.draw.line(screen, ORANGE, fire_tip, fire_rear_left, width=player.size//12)
             pyg.draw.line(screen, ORANGE, fire_rear_left, fire_rear_right, width=player.size//12)
             pyg.draw.line(screen, ORANGE, fire_tip, fire_rear_right, width=player.size//12)
     else:
+        if thrustMusicPlaying:
+            mixer.Channel(3).stop()
+            thrustMusicPlaying = False
         player.thrust[0] -= FRICTION * player.thrust[0]
         player.thrust[1] -= FRICTION * player.thrust[1]
 
