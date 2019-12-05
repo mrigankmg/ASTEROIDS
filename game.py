@@ -49,6 +49,7 @@ HIGH_SCORE_FILE = "high_score.txt"
 ### developer flags ###
 SHOW_CENTROID = False
 SHOW_BOUNDING = False
+SOUND_ON = True
 
 class Player:
   def __init__(self, x, y, size, angle):
@@ -85,6 +86,10 @@ class Laser:
         self.yv = -LASER_SPEED * math.sin(player.angle)
         self.distance = 0
         self.explodeTime = 0
+
+if not SOUND_ON:
+    for i in range(mixer.get_num_channels()):
+        mixer.Channel(i).set_volume(0)
 
 def createAsteroids():
     asteroids = []
