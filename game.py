@@ -2,6 +2,7 @@ import sys
 import pygame as pyg
 import math
 import random
+import os
 
 from pygame.gfxdraw import filled_circle
 
@@ -36,10 +37,13 @@ LASER_EXPLODE_DURATION = 3
 TEXT_SIZE = 80
 MAX_TEXT_DURATION = 60
 TEXT_ALPHA_SPEED = 2.5
-SCORE_TEXT_POS = (25, 15)
 SCORE_TEXT_SIZE = 40
 MAX_LIVES = 3
 FONT_STYLE = 'trench100free.ttf'
+LRG_ASTEROID_POINTS = 5
+MED_ASTEROID_POINTS = 10
+SML_ASTEROID_POINTS = 20
+HIGH_SCORE_FILE = "high_score.txt"
 
 ### developer flags ###
 SHOW_CENTROID = False
@@ -94,8 +98,17 @@ def createAsteroids():
     return asteroids
 
 def newGame():
-    global player, level, lives
+    global player, level, lives, score, highScore
+    score = 0
     level = 0
+    dirname = os.path.dirname('./' + HIGH_SCORE_FILE)
+    if not os.path.exists(dirname):
+       os.makedirs(dirname)
+       highScore = 0
+    else:
+        file_in = open('./' + HIGH_SCORE_FILE, 'r')
+        highScore = int(file_in.read())
+        file_in.close()
     lives = MAX_LIVES
     player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
     newLevel()
@@ -109,9 +122,8 @@ def newLevel():
 
 newGame()
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
+score_font = pyg.font.Font(FONT_STYLE, 40)
 pyg.display.set_caption('Asteroids Neural Network')
-font = pyg.font.Font(FONT_STYLE, 40)
-score_text = font.render('SCORE:', True, WHITE)
 
 def drawPlayer(x, y, angle, radius, color):
     ##### player coordinate and angle update #####
@@ -132,17 +144,29 @@ def explodePlayer():
     player.explodeTime = PLAYER_EXPLODE_DURATION
 
 def destroyAsteroid(index):
-    global asteroids, level
+    global asteroids, level, score, highScore
     if asteroids[index].size > ASTEROID_SIZE/4:
+        if asteroids[index].size == ASTEROID_SIZE:
+            score += LRG_ASTEROID_POINTS
+        else:
+            score += MED_ASTEROID_POINTS
         asteroids.append(Asteroid(asteroids[index].pos[0], asteroids[index].pos[1], asteroids[index].size/2))
         asteroids.append(Asteroid(asteroids[index].pos[0], asteroids[index].pos[1], asteroids[index].size/2))
+    else:
+        score += SML_ASTEROID_POINTS
+    if score > highScore:
+        highScore = score
     asteroids = asteroids[:index] + asteroids[index + 1:]
     if len(asteroids) == 0:
         level += 1
         newLevel()
 
 def gameOver():
-    global text_alpha, text_fade_in
+    global text_alpha, text_fade_in, score, highScore
+    if score == highScore:
+        file_out = open('./' + HIGH_SCORE_FILE, 'w')
+        file_out.write(str(highScore))
+        file_out.close()
     player.dead = True
     text_alpha = 2.5
     text_fade_in = True
@@ -152,9 +176,17 @@ while True:
     exploding = player.explodeTime > 0
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
+            if score == highScore:
+                file_out = open('./' + HIGH_SCORE_FILE, 'w')
+                file_out.write(str(highScore))
+                file_out.close()
             sys.exit()
     keys_pressed = pyg.key.get_pressed()
     if keys_pressed[pyg.K_ESCAPE]:
+        if score == highScore:
+            file_out = open('./' + HIGH_SCORE_FILE, 'w')
+            file_out.write(str(highScore))
+            file_out.close()
         sys.exit()
     if not player.dead:
         if keys_pressed[pyg.K_UP]:
@@ -252,11 +284,16 @@ while True:
     elif player.dead:
         newGame()
 
-    screen.blit(score_text, SCORE_TEXT_POS)
+    score_text = score_font.render('SCORE: ' + str(score), True, WHITE)
+    screen.blit(score_text, (player.size/2, player.size/2.5))
+
+    high_score_text = score_font.render('TOP SCORE: ' + str(highScore), True, WHITE)
+    position = text.get_rect(center=(WIDTH/2, player.size))
+    screen.blit(high_score_text, (position[0], player.size/2.5))
 
     for i in range(lives):
         color = RED if exploding and i == lives - 1 else WHITE
-        drawPlayer(WIDTH - PLAYER_SIZE - i * PLAYER_SIZE * 1.2, PLAYER_SIZE, math.radians(90), player.size/2.5, color)
+        drawPlayer(WIDTH - PLAYER_SIZE - i * PLAYER_SIZE * 1.3, PLAYER_SIZE * 1.2, math.radians(90), player.size/2.5, color)
 
     for i in range(len(asteroids) - 1, -1, -1):
         for j in range(len(player.lasers) - 1, -1, -1):
