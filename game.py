@@ -4,7 +4,10 @@ import pygame.mixer as mixer
 import math
 import random
 import os
-
+import numpy as np
+# from keras import optimizers as optimizers
+from keras.models import Sequential
+from keras.layers import Dense
 from pygame.gfxdraw import filled_circle
 
 pyg.init()
@@ -46,39 +49,51 @@ MED_ASTEROID_POINTS = 10
 SML_ASTEROID_POINTS = 20
 HIGH_SCORE_FILE = "high_score.txt"
 
-### developer flags ###
+# developer flags
 SHOW_CENTROID = False
 SHOW_BOUNDING = False
 SOUND_ON = True
 MUSIC_ON = True
+AUTO = True
+
+# neural net params
+NUM_INPUTS = 3
+NUM_OUTPUTS = 1
+NUM_SAMPLES = 100000
+OUTPUT_LEFT = 0
+OUTPUT_RIGHT = 1
+OUTPUT_THRESHOLD = 0.25
+
 
 class Player:
-  def __init__(self, x, y, size, angle):
-    self.pos = [x, y]
-    self.size = size
-    self.radius = size/2
-    self.angle = math.radians(angle)
-    self.rotation = 0
-    self.is_thrusting = False
-    self.thrust = [0, 0]
-    self.explodeTime = 0
-    self.blinkTime = PLAYER_BLINK_DURATION
-    self.blinkNum = PLAYER_INVINCIBILITY_DURATION/PLAYER_BLINK_DURATION
-    self.canShoot = True
-    self.lasers = []
-    self.dead = False
+    def __init__(self, x, y, size, angle):
+        self.pos = [x, y]
+        self.size = size
+        self.radius = size/2
+        self.angle = math.radians(angle)
+        self.rotation = 0
+        self.is_thrusting = False
+        self.thrust = [0, 0]
+        self.explodeTime = 0
+        self.blinkTime = PLAYER_BLINK_DURATION
+        self.blinkNum = PLAYER_INVINCIBILITY_DURATION/PLAYER_BLINK_DURATION
+        self.canShoot = True
+        self.lasers = []
+        self.dead = False
+
 
 class Asteroid:
-  def __init__(self, x, y, size):
-    self.speed_multiplier = 1 + 0.15 * level
-    self.pos = [x, y]
-    self.xv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
-    self.yv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
-    self.size = size
-    self.radius = math.ceil(size/2)
-    self.angle =  math.radians(random.random() * 360)
-    self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
-    self.offsets = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
+    def __init__(self, x, y, size):
+        self.speed_multiplier = 1 + 0.15 * level
+        self.pos = [x, y]
+        self.xv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
+        self.yv = random.random() * ASTEROID_SPEED * self.speed_multiplier * (1 if random.random() < 0.5 else -1)
+        self.size = size
+        self.radius = math.ceil(size/2)
+        self.angle =  math.radians(random.random() * 360)
+        self.vertices = math.floor(random.random() * (ASTEROID_VERTICES + 1) + ASTEROID_VERTICES/2)
+        self.offsets = [random.random() * ASTEROID_ROUGHNESS * 2 + 1 - ASTEROID_ROUGHNESS for i in range(self.vertices)]
+
 
 class Laser:
     def __init__(self, x, y):
@@ -87,6 +102,7 @@ class Laser:
         self.yv = -LASER_SPEED * math.sin(player.angle)
         self.distance = 0
         self.explodeTime = 0
+
 
 class Music:
     def __init__(self, low, high):
@@ -113,6 +129,7 @@ class Music:
     def setAsteroidRatio(self, ratio):
         self.tempo = 75 - 0.8 * (75 - ratio * 75)
 
+
 if not SOUND_ON:
     for i in range(4):
         mixer.Channel(i).set_volume(0)
@@ -121,6 +138,7 @@ if not MUSIC_ON:
     mixer.Channel(4).set_volume(0)
 
 music = Music('./sounds/music-low.ogg', './sounds/music-high.ogg')
+
 
 def createAsteroids():
     global totalAsteroids, asteroidsLeft
@@ -138,6 +156,7 @@ def createAsteroids():
     music.setAsteroidRatio(1)
     return asteroids
 
+
 def newGame():
     global player, level, lives, score, highScore, thrustMusicPlaying
     score = 0
@@ -153,6 +172,7 @@ def newGame():
     player = Player(WIDTH/2, HEIGHT/2, PLAYER_SIZE, 90)
     newLevel()
 
+
 def newLevel():
     global asteroids, text, text_alpha, level, text_fade_in, text_duration
     text_fade_in = True
@@ -160,20 +180,48 @@ def newLevel():
     text_duration = MAX_TEXT_DURATION
     asteroids = createAsteroids()
 
+
 newGame()
+model = None
+if AUTO:
+    # Neural network
+    # best so far with 76% accuracy is relu + sigmoid + mean_absolute_error + adam, adamax, nadam
+    model = Sequential()
+    model.add(Dense(NUM_INPUTS - 1, input_dim=NUM_INPUTS, activation='relu'))
+    for i in range(NUM_INPUTS - 2, NUM_OUTPUTS - 1, -1):
+        model.add(Dense(i, activation='sigmoid'))
+    model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['accuracy'])
+    train_x = np.empty([NUM_SAMPLES, NUM_INPUTS])
+    train_y = np.empty([NUM_SAMPLES, NUM_OUTPUTS]).flatten()
+    for i in range(NUM_SAMPLES):
+        asteroid_x = random.random() * (WIDTH + ASTEROID_SIZE) - ASTEROID_SIZE/2
+        asteroid_y = random.random() * (HEIGHT + ASTEROID_SIZE) - ASTEROID_SIZE/2
+        player_angle = math.radians(random.random() * 360)
+        angle_to_target = math.atan2(-asteroid_y + player.pos[1], asteroid_x - player.pos[0])
+        diff = player_angle - angle_to_target
+        angle = (diff + math.radians(360)) % math.radians(360)
+        direction = OUTPUT_LEFT if angle > math.radians(180) else OUTPUT_RIGHT
+        train_x[i][0] = (asteroid_x + ASTEROID_SIZE/2)/(WIDTH + ASTEROID_SIZE)
+        train_x[i][1] = (asteroid_y + ASTEROID_SIZE/2)/(HEIGHT + ASTEROID_SIZE)
+        train_x[i][2] = player_angle/math.radians(360)
+        train_y[i] = direction
+    history = model.fit(train_x, train_y, epochs=100, batch_size=64, shuffle=True)
+
 screen = pyg.display.set_mode((WIDTH, HEIGHT))
 score_font = pyg.font.Font(FONT_STYLE, 40)
 pyg.display.set_caption('Asteroids Neural Network')
 
+
 def drawPlayer(x, y, angle, radius, color):
-    ##### player coordinate and angle update #####
+    # player coordinate and angle update
     player_tip = (x + 4/3 * radius * math.cos(angle), y - 4/3 * radius * math.sin(angle))
     player_rear_left = (x - radius * (2/3 * math.cos(angle) + math.sin(angle)), y + radius * (2/3 * math.sin(angle) - math.cos(angle)))
     player_rear_right = (x - radius * (2/3 * math.cos(angle) - math.sin(angle)), y + radius * (2/3 * math.sin(angle) + math.cos(angle)))
-    ##### draw player #####
+    # draw player
     pyg.draw.line(screen, color, player_tip, player_rear_left, width=player.size//15)
     pyg.draw.line(screen, color, player_rear_left, player_rear_right, width=player.size//15)
     pyg.draw.line(screen, color, player_tip, player_rear_right, width=player.size//15)
+
 
 def shootLaser():
     if player.canShoot and len(player.lasers) < MAX_LASER:
@@ -181,9 +229,11 @@ def shootLaser():
         player.lasers.append(Laser(player.pos[0] + 4/3 * player.radius * math.cos(player.angle), player.pos[1] - 4/3 * player.radius * math.sin(player.angle)))
     player.canShoot = False
 
+
 def explodePlayer():
     mixer.Channel(1).play(mixer.Sound('./sounds/explode.ogg'))
     player.explodeTime = PLAYER_EXPLODE_DURATION
+
 
 def destroyAsteroid(index):
     global asteroids, level, score, highScore, music, asteroidsLeft, totalAsteroids
@@ -206,6 +256,7 @@ def destroyAsteroid(index):
         level += 1
         newLevel()
 
+
 def gameOver():
     global text_alpha, text_fade_in, score, highScore
     if score == highScore:
@@ -216,9 +267,24 @@ def gameOver():
     text_alpha = 2.5
     text_fade_in = True
 
+
 while True:
     blinkOn = player.blinkNum % 2 == 0
     exploding = player.explodeTime > 0
+
+    if AUTO:
+        asteroid_x = (asteroids[0].pos[0] + ASTEROID_SIZE/2)/(WIDTH + ASTEROID_SIZE)
+        asteroid_y = (asteroids[0].pos[1] + ASTEROID_SIZE/2)/(HEIGHT + ASTEROID_SIZE)
+        player_angle = player.angle/math.radians(360)
+        pred = model.predict(np.array([[asteroid_x, asteroid_y, player_angle]]))[0]
+        dLeft = abs(pred - OUTPUT_LEFT)
+        dRight = abs(pred - OUTPUT_RIGHT)
+        if dLeft < OUTPUT_THRESHOLD:
+            player.rotation = TURN_SPEED
+        elif dRight < OUTPUT_THRESHOLD:
+            player.rotation = -TURN_SPEED
+        else:
+            player.rotation = 0
 
     music.tick()
 
@@ -236,7 +302,7 @@ while True:
             file_out.write(str(highScore))
             file_out.close()
         sys.exit()
-    if not player.dead:
+    if not (player.dead or AUTO):
         if keys_pressed[pyg.K_UP]:
             player.is_thrusting = True
         else:
@@ -263,7 +329,7 @@ while True:
             if not thrustMusicPlaying:
                 mixer.Channel(3).play(mixer.Sound('./sounds/thrust.ogg'), loops=-1)
                 thrustMusicPlaying = True
-            ##### draw fire #####
+            # draw fire
             pyg.draw.polygon(screen, YELLOW, [fire_tip, fire_rear_left, fire_rear_right])
             pyg.draw.line(screen, ORANGE, fire_tip, fire_rear_left, width=player.size//12)
             pyg.draw.line(screen, ORANGE, fire_rear_left, fire_rear_right, width=player.size//12)
@@ -284,13 +350,13 @@ while True:
                 player.blinkTime = PLAYER_BLINK_DURATION
                 player.blinkNum -= 1
     else:
-        ##### draw explosion #####
+        # draw explosion
         filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 1.5), RED)
         filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 1.2), ORANGE)
         filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 0.9), YELLOW)
         filled_circle(screen, int(player.pos[0]), int(player.pos[1]), int(player.radius * 0.6), WHITE)
 
-    ##### draw asteroids #####
+    # draw asteroids
     for ast in asteroids:
         for i in range(ast.vertices):
             start = (ast.pos[0] + ast.radius * ast.offsets[i] * math.cos(ast.angle + i * math.pi * 2 / ast.vertices), ast.pos[1] + ast.radius * math.sin(ast.angle + i * math.pi * 2 / ast.vertices))
@@ -365,6 +431,12 @@ while True:
                     explodePlayer()
                     break
         player.angle += player.rotation
+
+        if player.angle < 0:
+            player.angle += math.radians(360)
+        elif player.angle >= math.radians(360):
+            player.angle -= math.radians(360)
+
         player.pos[0] += player.thrust[0]
         player.pos[1] += player.thrust[1]
     else:
@@ -376,7 +448,7 @@ while True:
             else:
                 gameOver()
 
-    ##### player back on screen when gone off screen #####
+    # player back on screen when gone off screen
     if player.pos[0] < -player.radius:
         player.pos[0] = WIDTH + player.radius
     elif player.pos[0] > WIDTH + player.radius:
@@ -410,7 +482,7 @@ while True:
     for ast in asteroids:
         ast.pos[0] += ast.xv
         ast.pos[1] += ast.yv
-        ##### asteroids back on screen when gone off screen #####
+        # asteroids back on screen when gone off screen
         if ast.pos[0] < -ast.radius:
             ast.pos[0] = WIDTH + ast.radius
         elif ast.pos[0] > WIDTH + ast.radius:
